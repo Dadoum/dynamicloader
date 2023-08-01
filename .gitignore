@@ -1,0 +1,20 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/dynamic-loader
+dynamic-loader.so
+dynamic-loader.dylib
+dynamic-loader.dll
+dynamic-loader.a
+dynamic-loader.lib
+dynamic-loader-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+
+# IDEA
+*.iml
+.idea/

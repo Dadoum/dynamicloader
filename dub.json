@@ -1,0 +1,8 @@
+{
+	"authors": [
+		"Dadoum"
+	],
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "dynamic-loader"
+}
