@@ -25,7 +25,7 @@ public struct LibImport {
                     return;
                 }
             }
-            assert(false, format!"Cannot load any of the following libraries: %s"(library.libraries));
+            throw new LibraryLoadingException(format!"Cannot load any of the following libraries: %s"(library.libraries));
         }
 
         // shared static ~this()
@@ -74,7 +74,7 @@ mixin template bindFunction(alias symbol) {
                     return;
                 }
             }
-            assert(false, format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
+            throw new LibraryLoadingException(format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
         }
     }
 
@@ -91,5 +91,11 @@ mixin template makeBindings() {
         static if (is(typeof(symbol) == function)) {
             mixin bindFunction!(symbol); // static foreach doesn't introduce a scope but mixin does so we use a mixin.
         }
+    }
+}
+
+class LibraryLoadingException: Exception {
+    this(string message, string file = __FILE__, size_t line = __LINE__) {
+        super(message, file, line);
     }
 }
