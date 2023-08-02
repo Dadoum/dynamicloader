@@ -1,6 +1,5 @@
 module dynamicloader;
 
-import core.stdc.stdlib;
 import core.sys.posix.dlfcn;
 import core.sys.windows.windows;
 
@@ -26,8 +25,7 @@ public struct LibImport {
                     return;
                 }
             }
-            stderr.writeln(format!"Cannot load any of the following libraries: %s"(library.libraries));
-            abort();
+            assert(false, format!"Cannot load any of the following libraries: %s"(library.libraries));
         }
 
         shared static ~this()
@@ -51,6 +49,7 @@ mixin template bindFunction(alias symbol) {
 
     import std.algorithm.iteration;
     import std.array;
+    import std.format;
 
     alias lib = getUDAs!(symbol, LibImport)[0];
     enum alternateNames = (cast(AlternateName[]) [getUDAs!(symbol, AlternateName)]).map!((alternateName) => alternateName.name).array();
@@ -60,20 +59,28 @@ mixin template bindFunction(alias symbol) {
 
     __gshared void* loadedFunction;
 
-    pragma(mangle, mangledName)
-    extern (C) ReturnType!symbol impl(Parameters!symbol params) @(__traits(getAttributes, symbol)) {
+    void ensureFunctionIsLoaded() {
         if (!loadedFunction) {
             auto library = LibImport.libraryHandle!lib;
             assert(library != null);
 
             static foreach (name; alternateNames ~ mangledName) {
                 version (Windows) {
-                    loadedFunction = GetProcAddress(library, mangledName);
+                    loadedFunction = GetProcAddress(library, name);
                 } else {
-                    loadedFunction = dlsym(library, mangledName);
+                    loadedFunction = dlsym(library, name);
+                }
+                if (loadedFunction) {
+                    return;
                 }
             }
+            assert(false, format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
         }
+    }
+
+    pragma(mangle, mangledName)
+    extern (C) ReturnType!symbol impl(Parameters!symbol params) @(__traits(getAttributes, symbol)) {
+        ensureFunctionIsLoaded();
         return (cast(FunctionType) loadedFunction)(params);
     }
 }
