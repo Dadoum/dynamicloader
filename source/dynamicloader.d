@@ -28,14 +28,14 @@ public struct LibImport {
             assert(false, format!"Cannot load any of the following libraries: %s"(library.libraries));
         }
 
-        shared static ~this()
-        {
-            version (Windows) {
-                FreeLibrary(libraryHandle);
-            } else {
-                dlclose(libraryHandle);
-            }
-        }
+        // shared static ~this()
+        // {
+        //     version (Windows) {
+        //         FreeLibrary(libraryHandle);
+        //     } else {
+        //         dlclose(libraryHandle);
+        //     }
+        // }
     }
 }
 
