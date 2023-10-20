@@ -11,10 +11,15 @@ public struct LibImport {
 
     this(string[] libraryNames...) { libraries = libraryNames; }
 
-    template libraryHandle(LibImport library) {
-        __gshared static void* libraryHandle;
+    alias libraryHandle(LibImport library) = lhStore!library.libraryHandle;
+    alias load(LibImport library) = lhStore!library.load;
+    alias loaded(LibImport library) = lhStore!library.loaded;
 
-        shared static this() {
+    template lhStore(LibImport library) {
+        __gshared static void* libraryHandle;
+        static shared bool loaded = false;
+
+        static void load() {
             static foreach (libraryName; library.libraries) {
                 version (Windows) {
                     libraryHandle = LoadLibraryA(libraryName);
@@ -22,6 +27,7 @@ public struct LibImport {
                     libraryHandle = dlopen(libraryName, RTLD_LAZY);
                 }
                 if (libraryHandle) {
+                    loaded = true;
                     return;
                 }
             }
@@ -60,6 +66,10 @@ mixin template bindFunction(alias symbol) {
     __gshared void* loadedFunction;
 
     void ensureFunctionIsLoaded() {
+        if (!LibImport.loaded!lib) {
+            LibImport.load!lib();
+        }
+
         if (!loadedFunction) {
             auto library = LibImport.libraryHandle!lib;
             assert(library != null);
