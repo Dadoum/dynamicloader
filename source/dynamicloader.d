@@ -66,6 +66,9 @@ mixin template bindFunction(alias symbol, alias functionLoader) {
     extern (C) auto impl(Parameters!symbol params) @(__traits(getAttributes, symbol)) {
         if (!LibImport.loaded!lib) {
             LibImport.load!lib();
+        }
+
+        if (!loadedFunction) {
             functionLoader();
         }
 
