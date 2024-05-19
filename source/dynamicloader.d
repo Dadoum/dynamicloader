@@ -19,7 +19,7 @@ public struct LibImport {
         __gshared static void* libraryHandle;
         static shared bool loaded = false;
 
-        static void load() {
+        static void load() nothrow {
             static foreach (libraryName; library.libraries) {
                 version (Windows) {
                     libraryHandle = LoadLibraryA(libraryName);
@@ -92,7 +92,7 @@ template loadFunction(alias symbol) {
 
     alias loadedFunction = LibImport.functionStore!symbol;
 
-    void loadFunction() {
+    bool loadFunction() nothrow {
         alias loadedFunction = LibImport.functionStore!symbol;
 
         auto library = LibImport.libraryHandle!lib;
@@ -105,10 +105,11 @@ template loadFunction(alias symbol) {
                 loadedFunction = dlsym(library, name);
             }
             if (loadedFunction) {
-                return;
+                return true;
             }
         }
-        throw new LibraryLoadingException(format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
+        return false;
+        // throw new LibraryLoadingException(format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
     }
 }
 
@@ -130,9 +131,22 @@ mixin template makeBindings() {
     void loadFunctions() {
         static foreach (symbol; getSymbolsByUDA!(module_, LibImport)) {
             static if (is(typeof(symbol) == function)) {
-                loadFunction!symbol();
+                if (!loadFunction!symbol()) {
+                    throw new LibraryLoadingException(format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
+                }
             }
         }
+    }
+
+    bool tryLoadFunctions() nothrow {
+        static foreach (symbol; getSymbolsByUDA!(module_, LibImport)) {
+            static if (is(typeof(symbol) == function)) {
+                if (!loadFunction!symbol()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
 
