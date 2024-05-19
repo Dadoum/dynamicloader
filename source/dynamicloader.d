@@ -13,13 +13,20 @@ public struct LibImport {
 
     alias libraryHandle(LibImport library) = lhStore!library.libraryHandle;
     alias load(LibImport library) = lhStore!library.load;
+    alias tryLoad(LibImport library) = lhStore!library.tryLoad;
     alias loaded(LibImport library) = lhStore!library.loaded;
 
     template lhStore(LibImport library) {
         __gshared static void* libraryHandle;
         static shared bool loaded = false;
 
-        static void load() nothrow {
+        static void load() {
+            if (!tryLoad()) {
+                throw new LibraryLoadingException(format!"Cannot load any of the following libraries: %s"(library.libraries));
+            }
+        }
+
+        static bool tryLoad() nothrow {
             static foreach (libraryName; library.libraries) {
                 version (Windows) {
                     libraryHandle = LoadLibraryA(libraryName);
@@ -28,11 +35,11 @@ public struct LibImport {
                 }
                 if (libraryHandle) {
                     loaded = true;
-                    return;
+                    return true;
                 }
             }
 
-            throw new LibraryLoadingException(format!"Cannot load any of the following libraries: %s"(library.libraries));
+            return false;
         }
 
         // shared static ~this()
@@ -132,7 +139,7 @@ mixin template makeBindings() {
         static foreach (symbol; getSymbolsByUDA!(module_, LibImport)) {
             static if (is(typeof(symbol) == function)) {
                 if (!loadFunction!symbol()) {
-                    throw new LibraryLoadingException(format!"Cannot load %s, tried to load %s"(__traits(identifier, symbol), alternateNames ~ mangledName));
+                    throw new LibraryLoadingException(format!"Cannot load %s"(__traits(identifier, symbol)));
                 }
             }
         }
