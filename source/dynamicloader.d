@@ -105,7 +105,7 @@ template loadFunction(alias symbol) {
         auto library = LibImport.libraryHandle!lib;
         assert(library != null);
 
-        static foreach (name; alternateNames ~ mangledName) {
+        static foreach (name; alternateNames ~ [__traits(identifier, symbol), mangledName]) {
             version (Windows) {
                 loadedFunction = GetProcAddress(library, name);
             } else {
