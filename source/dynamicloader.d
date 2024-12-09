@@ -62,7 +62,7 @@ struct AlternateName {
 }
 
 mixin template bindFunction(alias symbol, alias functionLoader) {
-    import std.traits: SetFunctionAttributes;
+    import std.traits: SetFunctionAttributes, functionAttributes;
     alias lib = getUDAs!(symbol, LibImport)[0];
 
     alias FunctionType = typeof(&symbol);
