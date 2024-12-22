@@ -62,7 +62,7 @@ struct AlternateName {
 }
 
 mixin template bindFunction(alias symbol, alias functionLoader) {
-    import std.traits: SetFunctionAttributes, functionAttributes;
+    import std.traits: SetFunctionAttributes;
     alias lib = getUDAs!(symbol, LibImport)[0];
 
     alias FunctionType = typeof(&symbol);
@@ -80,7 +80,7 @@ mixin template bindFunction(alias symbol, alias functionLoader) {
             functionLoader();
         }
 
-        return (cast(SetFunctionAttributes!(FunctionType, "C", functionAttributes!FunctionType)) loadedFunction)(params);
+        return (cast(FunctionType) loadedFunction)(params);
     }
 }
 
@@ -106,7 +106,7 @@ template loadFunction(alias symbol) {
         auto library = LibImport.libraryHandle!lib;
         assert(library != null);
 
-        static foreach (name; alternateNames ~ [__traits(identifier, symbol), mangledName]) {
+        static foreach (name; alternateNames ~ mangledName) {
             version (Windows) {
                 loadedFunction = GetProcAddress(library, name);
             } else {
